@@ -1,4 +1,4 @@
--- PSF Remake 4.1 — Complete All-in-One UI + Script Executor
+-- PSF Remake 4.1 — Complete All-in-One UI + Script Executor with Script Hub
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
@@ -99,7 +99,7 @@ header.Size=UDim2.new(1,0,0,46)
 header.BackgroundTransparency=1
 
 local title=Instance.new("TextLabel",header)
-title.Text="PSF Remake 4.1"
+title.Text="PSF Remake 4.1 - Script Hub"
 title.Font=Enum.Font.GothamBold
 title.TextSize=20
 title.TextColor3=Color3.fromRGB(240,240,240)
@@ -113,32 +113,31 @@ local toolbar=Instance.new("Frame",header)
 toolbar.AnchorPoint=Vector2.new(1,0)
 toolbar.Position=UDim2.new(1,-12,0,6)
 toolbar.BackgroundTransparency=1
-toolbar.Size=UDim2.new(0,360,1,0)
-local function makeBtn(parent,text,sizeX)
+toolbar.Size=UDim2.new(0,460,1,0)
+local function makeBtn(parent,text,sizeX,color)
     local b=Instance.new("TextButton",parent)
     b.Text=text
     b.Font=Enum.Font.Gotham
     b.TextSize=14
     b.TextColor3=Color3.fromRGB(255,255,255)
     b.AutoButtonColor=true
-    b.BackgroundColor3=Color3.fromRGB(38,38,38)
+    b.BackgroundColor3=color or Color3.fromRGB(38,38,38)
     b.Size=UDim2.new(0,sizeX or 72,0,30)
     b.BorderSizePixel=0
     Instance.new("UICorner",b).CornerRadius=UDim.new(0,6)
     return b
 end
 
-local runBtn=makeBtn(toolbar,"Run",72)
-local newBtn=makeBtn(toolbar,"New",72)
-local delBtn=makeBtn(toolbar,"Delete",72)
-local clearBtn=makeBtn(toolbar,"Clear",72)
-local exportBtn=makeBtn(toolbar,"Export",72)
+local runBtn=makeBtn(toolbar,"Run",72,Color3.fromRGB(0, 150, 255))
+local newBtn=makeBtn(toolbar,"New",72,Color3.fromRGB(0, 170, 255))
+local delBtn=makeBtn(toolbar,"Delete",72,Color3.fromRGB(255,50,50))
+local clearBtn=makeBtn(toolbar,"Clear",72,Color3.fromRGB(150, 100, 0))
+local hubBtn=makeBtn(toolbar,"Script Hub",90,Color3.fromRGB(120, 0, 200))
 local tbLayout=Instance.new("UIListLayout",toolbar)
 tbLayout.FillDirection=Enum.FillDirection.Horizontal
 tbLayout.HorizontalAlignment=Enum.HorizontalAlignment.Right
 tbLayout.SortOrder=Enum.SortOrder.LayoutOrder
 tbLayout.Padding=UDim.new(0,8)
-toolbar.Size=UDim2.new(0,(72+8)*5,1,0)
 
 -- Body
 local body=Instance.new("Frame",main)
@@ -153,7 +152,7 @@ left.Position=UDim2.new(0,0,0,0)
 left.BackgroundTransparency=1
 
 local leftHeader=Instance.new("TextLabel",left)
-leftHeader.Text="Scripts"
+leftHeader.Text="My Scripts"
 leftHeader.Font=Enum.Font.GothamSemibold
 leftHeader.TextSize=16
 leftHeader.TextColor3=Color3.fromRGB(230,230,230)
@@ -188,7 +187,7 @@ editorBox.TextXAlignment=Enum.TextXAlignment.Left
 editorBox.TextYAlignment=Enum.TextYAlignment.Top
 editorBox.Font=Enum.Font.Code
 editorBox.TextSize=16
-editorBox.Text="-- Выберите или создайте скрипт\n"
+editorBox.Text="-- Выберите или создайте скрипт\n-- Или используйте Script Hub для загрузки готовых скриптов\n"
 editorBox.BackgroundColor3=Color3.fromRGB(14,14,14)
 editorBox.TextColor3=Color3.fromRGB(240,240,240)
 editorBox.Size=UDim2.new(1,0,0.64,0)
@@ -217,6 +216,177 @@ consoleText.Text=""
 consoleText.TextWrapped=true
 consoleText.AutomaticSize=Enum.AutomaticSize.Y
 
+-- Script Hub Frame (initially hidden)
+local hubFrame = Instance.new("Frame", main)
+hubFrame.Size = UDim2.new(1, -24, 1, -68)
+hubFrame.Position = UDim2.new(0, 12, 0, 56)
+hubFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+hubFrame.Visible = false
+Instance.new("UICorner", hubFrame).CornerRadius = UDim.new(0, 12)
+
+local hubHeader = Instance.new("TextLabel", hubFrame)
+hubHeader.Text = "📁 Script Hub - Popular Scripts"
+hubHeader.Font = Enum.Font.GothamBold
+hubHeader.TextSize = 18
+hubHeader.TextColor3 = Color3.fromRGB(240, 240, 240)
+hubHeader.BackgroundTransparency = 1
+hubHeader.Size = UDim2.new(1, 0, 0, 40)
+hubHeader.Position = UDim2.new(0, 16, 0, 8)
+hubHeader.TextXAlignment = Enum.TextXAlignment.Left
+
+local hubCloseBtn = Instance.new("TextButton", hubFrame)
+hubCloseBtn.Text = "✕"
+hubCloseBtn.Font = Enum.Font.GothamBold
+hubCloseBtn.TextSize = 16
+hubCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+hubCloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+hubCloseBtn.Size = UDim2.new(0, 30, 0, 30)
+hubCloseBtn.Position = UDim2.new(1, -38, 0, 8)
+hubCloseBtn.AutoButtonColor = true
+Instance.new("UICorner", hubCloseBtn).CornerRadius = UDim.new(0, 6)
+
+local hubList = Instance.new("ScrollingFrame", hubFrame)
+hubList.Size = UDim2.new(1, -16, 1, -60)
+hubList.Position = UDim2.new(0, 8, 0, 48)
+hubList.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+hubList.ScrollBarThickness = 8
+Instance.new("UICorner", hubList).CornerRadius = UDim.new(0, 8)
+
+local hubLayout = Instance.new("UIListLayout", hubList)
+hubLayout.Padding = UDim.new(0, 8)
+hubLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Popular Scripts Database
+local popularScripts = {
+    {
+        name = "🌟 Infinite Yield FE",
+        description = "Most popular admin script",
+        code = "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()",
+        color = Color3.fromRGB(255, 215, 0)
+    },
+    {
+        name = "🦅 Owl Hub",
+        description = "Universal script hub for multiple games",
+        code = "loadstring(game:HttpGet('https://raw.githubusercontent.com/CriShoux/OwlHub/master/OwlHub.txt'))()",
+        color = Color3.fromRGB(0, 150, 255)
+    },
+    {
+        name = "🌀 CMD-X",
+        description = "Powerful command executor",
+        code = "loadstring(game:HttpGet('https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source',true))()",
+        color = Color3.fromRGB(100, 200, 100)
+    },
+    {
+        name = "🎯 AimBot Script",
+        description = "Auto aim for FPS games",
+        code = "-- Simple AimBot example\nlocal Players = game:GetService('Players')\nlocal localPlayer = Players.LocalPlayer\n\nfunction getClosestPlayer()\n    local closest, maxDist = nil, math.huge\n    for _, player in pairs(Players:GetPlayers()) do\n        if player ~= localPlayer and player.Character then\n            local char = player.Character\n            local humanoid = char:FindFirstChild('Humanoid')\n            local rootPart = char:FindFirstChild('HumanoidRootPart')\n            \n            if humanoid and humanoid.Health > 0 and rootPart then\n                local dist = (localPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude\n                if dist < maxDist then\n                    closest = player\n                    maxDist = dist\n                end\n            end\n        end\n    end\n    return closest\nend\n\nprint('AimBot loaded - Use with caution!')",
+        color = Color3.fromRGB(255, 100, 100)
+    },
+    {
+        name = "⚡ Fly Script",
+        description = "Universal fly script",
+        code = "-- Universal Fly Script\nlocal Players = game:GetService('Players')\nlocal UserInputService = game:GetService('UserInputService')\nlocal RunService = game:GetService('RunService')\n\nlocal player = Players.LocalPlayer\nlocal character = player.CharacterAdded:Wait()\nlocal humanoid = character:WaitForChild('Humanoid')\n\nlocal flying = false\nlocal flySpeed = 50\n\nfunction startFlying()\n    flying = true\n    local bodyVelocity = Instance.new('BodyVelocity')\n    bodyVelocity.Velocity = Vector3.new(0, 0, 0)\n    bodyVelocity.MaxForce = Vector3.new(40000, 40000, 40000)\n    bodyVelocity.Parent = character.HumanoidRootPart\n    \n    while flying and character and character.HumanoidRootPart do\n        local direction = Vector3.new()\n        \n        if UserInputService:IsKeyDown(Enum.KeyCode.W) then\n            direction = direction + character.HumanoidRootPart.CFrame.LookVector\n        end\n        if UserInputService:IsKeyDown(Enum.KeyCode.S) then\n            direction = direction - character.HumanoidRootPart.CFrame.LookVector\n        end\n        if UserInputService:IsKeyDown(Enum.KeyCode.A) then\n            direction = direction - character.HumanoidRootPart.CFrame.RightVector\n        end\n        if UserInputService:IsKeyDown(Enum.KeyCode.D) then\n            direction = direction + character.HumanoidRootPart.CFrame.RightVector\n        end\n        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then\n            direction = direction + Vector3.new(0, 1, 0)\n        end\n        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then\n            direction = direction - Vector3.new(0, 1, 0)\n        end\n        \n        bodyVelocity.Velocity = direction.Unit * flySpeed\n        RunService.Heartbeat:Wait()\n    end\n    \n    if bodyVelocity then\n        bodyVelocity:Destroy()\n    end\nend\n\nUserInputService.InputBegan:Connect(function(input)\n    if input.KeyCode == Enum.KeyCode.F then\n        flying = not flying\n        if flying then\n            startFlying()\n        end\n    end\nend)\n\nprint('Fly script loaded! Press F to toggle fly')",
+        color = Color3.fromRGB(100, 200, 255)
+    },
+    {
+        name = "🛡️ Anti-AFK",
+        description = "Prevents getting kicked for AFK",
+        code = "local VirtualUser = game:GetService('VirtualUser')\ngame:GetService('Players').LocalPlayer.Idled:Connect(function()\n    VirtualUser:CaptureController()\n    VirtualUser:ClickButton2(Vector2.new())\nend)\nprint('Anti-AFK activated!')",
+        color = Color3.fromRGB(150, 100, 200)
+    },
+    {
+        name = "🎨 ESP Script",
+        description = "See players through walls",
+        code = "-- Basic ESP Script\nlocal Players = game:GetService('Players')\nlocal RunService = game:GetService('RunService')\n\nlocal localPlayer = Players.LocalPlayer\nlocal espObjects = {}\n\nfunction createESP(player)\n    if player == localPlayer then return end\n    \n    local highlight = Instance.new('Highlight')\n    highlight.Name = 'ESP_' .. player.Name\n    highlight.FillColor = Color3.fromRGB(255, 0, 0)\n    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)\n    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop\n    highlight.Parent = player.Character\n    \n    espObjects[player] = highlight\nend\n\nfunction removeESP(player)\n    if espObjects[player] then\n        espObjects[player]:Destroy()\n        espObjects[player] = nil\n    end\nend\n\nPlayers.PlayerAdded:Connect(function(player)\n    player.CharacterAdded:Connect(function()\n        createESP(player)\n    end)\nend)\n\nPlayers.PlayerRemoving:Connect(function(player)\n    removeESP(player)\nend)\n\n-- Add ESP to existing players\nfor _, player in pairs(Players:GetPlayers()) do\n    if player.Character then\n        createESP(player)\n    end\n    player.CharacterAdded:Connect(function()\n        createESP(player)\n    end)\nend\n\nprint('ESP script loaded!')",
+        color = Color3.fromRGB(0, 200, 100)
+    }
+}
+
+-- Function to create script hub buttons
+local function createHubScriptButtons()
+    for _, child in pairs(hubList:GetChildren()) do
+        if child:IsA('TextButton') then
+            child:Destroy()
+        end
+    end
+    
+    for i, scriptData in ipairs(popularScripts) do
+        local scriptBtn = Instance.new('TextButton', hubList)
+        scriptBtn.Size = UDim2.new(1, -16, 0, 80)
+        scriptBtn.Position = UDim2.new(0, 8, 0, (i-1)*88)
+        scriptBtn.BackgroundColor3 = scriptData.color
+        scriptBtn.Text = ''
+        scriptBtn.AutoButtonColor = false
+        
+        local btnCorner = Instance.new('UICorner', scriptBtn)
+        btnCorner.CornerRadius = UDim.new(0, 8)
+        
+        local nameLabel = Instance.new('TextLabel', scriptBtn)
+        nameLabel.Size = UDim2.new(1, -16, 0, 30)
+        nameLabel.Position = UDim2.new(0, 8, 0, 8)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = scriptData.name
+        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 16
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local descLabel = Instance.new('TextLabel', scriptBtn)
+        descLabel.Size = UDim2.new(1, -16, 0, 20)
+        descLabel.Position = UDim2.new(0, 8, 0, 38)
+        descLabel.BackgroundTransparency = 1
+        descLabel.Text = scriptData.description
+        descLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+        descLabel.Font = Enum.Font.Gotham
+        descLabel.TextSize = 12
+        descLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local loadBtn = Instance.new('TextButton', scriptBtn)
+        loadBtn.Size = UDim2.new(0, 80, 0, 25)
+        loadBtn.Position = UDim2.new(1, -88, 1, -30)
+        loadBtn.Text = 'LOAD'
+        loadBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        loadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        loadBtn.Font = Enum.Font.GothamBold
+        loadBtn.TextSize = 12
+        loadBtn.AutoButtonColor = true
+        Instance.new('UICorner', loadBtn).CornerRadius = UDim.new(0, 4)
+        
+        local executeBtn = Instance.new('TextButton', scriptBtn)
+        executeBtn.Size = UDim2.new(0, 80, 0, 25)
+        executeBtn.Position = UDim2.new(1, -88, 1, -60)
+        executeBtn.Text = 'EXECUTE'
+        executeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        executeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        executeBtn.Font = Enum.Font.GothamBold
+        executeBtn.TextSize = 12
+        executeBtn.AutoButtonColor = true
+        Instance.new('UICorner', executeBtn).CornerRadius = UDim.new(0, 4)
+        
+        -- Button functionality
+        loadBtn.MouseButton1Click:Connect(function()
+            editorBox.Text = scriptData.code
+            appendConsole('📥 Loaded: ' .. scriptData.name)
+            hubFrame.Visible = false
+            body.Visible = true
+        end)
+        
+        executeBtn.MouseButton1Click:Connect(function()
+            appendConsole('🚀 Executing: ' .. scriptData.name)
+            local success, err = pcall(function()
+                loadstring(scriptData.code)()
+            end)
+            if not success then
+                appendConsole('❌ Error: ' .. tostring(err))
+            else
+                appendConsole('✅ Script executed successfully!')
+            end
+        end)
+    end
+    
+    hubList.CanvasSize = UDim2.new(0, 0, 0, #popularScripts * 88)
+end
+
 -- Collapse/Expand button (bottom-left)
 local collapsed=false
 local rotateBtn=Instance.new("ImageButton",screenGui)
@@ -237,9 +407,11 @@ local function appendConsole(line)
     consoleFrame.CanvasSize=UDim2.new(0,0,0,consoleText.AbsoluteSize.Y+24)
     consoleFrame.CanvasPosition=Vector2.new(0,math.max(0,consoleText.AbsoluteSize.Y-consoleFrame.AbsoluteSize.Y))
 end
+
 local function saveScripts()
     scriptsValue.Value=HttpService:JSONEncode(demoScripts)
 end
+
 local function rebuildList()
     for _,child in pairs(listFrame:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
@@ -264,7 +436,9 @@ local function rebuildList()
     end
     listFrame.CanvasSize=UDim2.new(0,0,0,listLayout.AbsoluteContentSize.Y+16)
 end
+
 rebuildList()
+createHubScriptButtons()
 
 -- Toolbar buttons
 runBtn.MouseButton1Click:Connect(function()
@@ -273,26 +447,32 @@ runBtn.MouseButton1Click:Connect(function()
     if s then
         s.code=editorBox.Text
         saveScripts()
-        appendConsole("Running: "..s.name)
+        appendConsole("🚀 Running: "..s.name)
         local ok,f=pcall(loadstring,s.code)
         if ok and type(f)=="function" then
             local success,err=pcall(f)
-            if not success then appendConsole("Error: "..tostring(err)) end
+            if not success then 
+                appendConsole("❌ Error: "..tostring(err)) 
+            else
+                appendConsole("✅ Script executed successfully!")
+            end
         else
-            appendConsole("Compile error.")
+            appendConsole("❌ Compile error: "..tostring(f))
         end
     else
-        appendConsole("No script selected.")
+        appendConsole("❌ No script selected.")
     end
 end)
+
 newBtn.MouseButton1Click:Connect(function()
-    table.insert(demoScripts,{name="New Script "..#demoScripts+1,code="-- new script\n"})
+    table.insert(demoScripts,{name="New Script "..#demoScripts+1,code="-- new script\nprint('Hello from new script!')\n"})
     savedSettings.selected=#demoScripts
     rebuildList()
     editorBox.Text=demoScripts[#demoScripts].code
     saveScripts()
-    appendConsole("Created new script.")
+    appendConsole("📝 Created new script.")
 end)
+
 delBtn.MouseButton1Click:Connect(function()
     local sel=savedSettings.selected
     if sel and demoScripts[sel] then
@@ -301,16 +481,28 @@ delBtn.MouseButton1Click:Connect(function()
         rebuildList()
         editorBox.Text=demoScripts[savedSettings.selected] and demoScripts[savedSettings.selected].code or ""
         saveScripts()
-        appendConsole("Deleted script.")
-    else appendConsole("No script selected to delete.") end
+        appendConsole("🗑️ Deleted script.")
+    else 
+        appendConsole("❌ No script selected to delete.") 
+    end
 end)
+
 clearBtn.MouseButton1Click:Connect(function()
     consoleText.Text=""
     consoleFrame.CanvasSize=UDim2.new(0,0,0,0)
+    appendConsole("🧹 Console cleared.")
 end)
-exportBtn.MouseButton1Click:Connect(function()
-    appendConsole("Export JSON:")
-    appendConsole(HttpService:JSONEncode(demoScripts))
+
+hubBtn.MouseButton1Click:Connect(function()
+    body.Visible = false
+    hubFrame.Visible = true
+    appendConsole("📁 Opened Script Hub")
+end)
+
+hubCloseBtn.MouseButton1Click:Connect(function()
+    hubFrame.Visible = false
+    body.Visible = true
+    appendConsole("📁 Closed Script Hub")
 end)
 
 -- Auto-save editor
@@ -331,7 +523,9 @@ end)
 -- Restore last selected
 local sel=savedSettings.selected or 1
 editorBox.Text=demoScripts[sel] and demoScripts[sel].code or ""
-appendConsole("PSF Remake 4.1 ready. Select script and press Run.")
+appendConsole("🎮 PSF Remake 4.1 - Script Hub ready!")
+appendConsole("💡 Use Script Hub button to load popular scripts")
+appendConsole("⚡ Select your script and press Run to execute")
 
 -- Animation loop
 local animSpeed=5
@@ -347,7 +541,7 @@ RunService.RenderStepped:Connect(function(dt)
     local scaleY=currentY+(targetScale-currentY)*dt*animSpeed
     main.Size=UDim2.new(scaleX,0,scaleY,0)
     main.ClipsDescendants=scaleY<0.01
-    body.Visible=scaleY>0.01
+    body.Visible=scaleY>0.01 and not hubFrame.Visible
     main.BackgroundTransparency=1-scaleY
 
     -- Smooth color shift
@@ -357,4 +551,9 @@ RunService.RenderStepped:Connect(function(dt)
     local g=18+(240-18)*cv
     local b=18+(240-18)*cv
     main.BackgroundColor3=Color3.fromRGB(r,g,b)
+end)
+
+-- Save settings periodically
+RunService.Heartbeat:Connect(function(dt)
+    settingsValue.Value = HttpService:JSONEncode(savedSettings)
 end)
